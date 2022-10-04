@@ -146,55 +146,6 @@ Itinéraire déterminé.
 
 ## 5. Petit chat privé
 
-![Netcat](./pics/netcat.jpg)
-
-On va créer un chat extrêmement simpliste à l'aide de `netcat` (abrégé `nc`). Il est souvent considéré comme un bon couteau-suisse quand il s'agit de faire des choses avec le réseau.
-
-Sous GNU/Linux et MacOS vous l'avez sûrement déjà, sinon débrouillez-vous pour l'installer :). Les Windowsien, ça se passe [ici](https://eternallybored.org/misc/netcat/netcat-win32-1.11.zip) (from https://eternallybored.org/misc/netcat/).  
-
-Une fois en possession de `netcat`, vous allez pouvoir l'utiliser en ligne de commande. Comme beaucoup de commandes sous GNU/Linux, Mac et Windows, on peut utiliser l'option `-h` (`h` pour `help`) pour avoir une aide sur comment utiliser la commande.  
-
-Sur un Windows, ça donne un truc comme ça :
-
-```schema
-C:\Users\It4\Desktop\netcat-win32-1.11>nc.exe -h
-[v1.11 NT www.vulnwatch.org/netcat/]
-connect to somewhere:   nc [-options] hostname port[s] [ports] ...
-listen for inbound:     nc -l -p port [options] [hostname] [port]
-options:
-        -d              detach from console, background mode
-
-        -e prog         inbound program to exec [dangerous!!]
-        -g gateway      source-routing hop point[s], up to 8
-        -G num          source-routing pointer: 4, 8, 12, ...
-        -h              this cruft
-        -i secs         delay interval for lines sent, ports scanned
-        -l              listen mode, for inbound connects
-        -L              listen harder, re-listen on socket close
-        -n              numeric-only IP addresses, no DNS
-        -o file         hex dump of traffic
-        -p port         local port number
-        -r              randomize local and remote ports
-        -s addr         local source address
-        -t              answer TELNET negotiation
-        -u              UDP mode
-        -v              verbose [use twice to be more verbose]
-        -w secs         timeout for connects and final net reads
-        -z              zero-I/O mode [used for scanning]
-port numbers can be individual or ranges: m-n [inclusive]
-```
-
-L'idée ici est la suivante :
-
-- l'un de vous jouera le rôle d'un *serveur*
-- l'autre sera le *client* qui se connecte au *serveur*
-
-Précisément, on va dire à `netcat` d'*écouter sur un port*. Des ports, y'en a un nombre fixe (65536, on verra ça plus tard), et c'est juste le numéro de la porte à laquelle taper si on veut communiquer avec le serveur.
-
-Si le serveur écoute à la porte 20000, alors le client doit demander une connexion en tapant à la porte numéro 20000, simple non ?  
-
-Here we go :
-
 🌞 **sur le PC *serveur*** 
 ```
 C:\Users\guill\Desktop\netcat-1.11>nc.exe -l -p 8888
@@ -225,18 +176,6 @@ Client :
   TCP    192.168.137.11:63663   13.69.68.64:443        ESTABLISHED
 ```
 
-- si vous faites un `netstat` sur le serveur AVANT que le client `netcat` se connecte, vous devriez observer que votre serveur `netcat` écoute sur toutes vos interfaces
-  - c'est à dire qu'on peut s'y connecter depuis la wifi par exemple :D
-- il est possible d'indiquer à `netcat` une interface précise sur laquelle écouter
-  - par exemple, on écoute sur l'interface Ethernet, mais pas sur la WiFI
-
-```bash
-# Sur Windows/MacOS
-$ nc.exe -l -p PORT_NUMBER -s IP_ADDRESS
-# Par exemple
-$ nc.exe -l -p 9999 -s 192.168.1.37
-```
-
 ## 6. Firewall
 
 Toujours par 2.
@@ -244,18 +183,47 @@ Toujours par 2.
 Le but est de configurer votre firewall plutôt que de le désactiver
 
 🌞 **Activez et configurez votre firewall**
+Côté server : 
 
-- autoriser les `ping`
-  - configurer le firewall de votre OS pour accepter le `ping`
-  - aidez vous d'internet
-  - on rentrera dans l'explication dans un prochain cours mais sachez que `ping` envoie un message *ICMP de type 8* (demande d'ECHO) et reçoit un message *ICMP de type 0* (réponse d'écho) en retour
-- autoriser le traffic sur le port qu'utilise `nc`
-  - on parle bien d'ouverture de **port** TCP et/ou UDP
-  - on ne parle **PAS** d'autoriser le programme `nc`
-  - choisissez arbitrairement un port entre 1024 et 20000
-  - vous utiliserez ce port pour communiquer avec `netcat` par groupe de 2 toujours
-  - le firewall du *PC serveur* devra avoir un firewall activé et un `netcat` qui fonctionne
-  
+![Autorize](./pics/Autorize.png)
+```
+Gwuill — Aujourd’hui à 14:21
+PS C:\Users\guill> ping 192.168.137.11
+
+Envoi d’une requête 'Ping'  192.168.137.11 avec 32 octets de données :
+Réponse de 192.168.137.11 : octets=32 temps=1 ms TTL=128
+Réponse de 192.168.137.11 : octets=32 temps=2 ms TTL=128
+Réponse de 192.168.137.11 : octets=32 temps=1 ms TTL=128
+Réponse de 192.168.137.11 : octets=32 temps=2 ms TTL=128
+
+Statistiques Ping pour 192.168.137.11:
+    Paquets : envoyés = 4, reçus = 4, perdus = 0 (perte 0%),
+Durée approximative des boucles en millisecondes :
+    Minimum = 1ms, Maximum = 2ms, Moyenne = 1ms
+```
+
+Côté client : 
+![Autorize](./pics/AutorizeN.png)
+
+```
+C:\Users\natha>ping 192.168.137.1
+
+Envoi d’une requête 'Ping'  192.168.137.1 avec 32 octets de données :
+Réponse de 192.168.137.1 : octets=32 temps=1 ms TTL=128
+Réponse de 192.168.137.1 : octets=32 temps=1 ms TTL=128
+Réponse de 192.168.137.1 : octets=32 temps=2 ms TTL=128
+Réponse de 192.168.137.1 : octets=32 temps=1 ms TTL=128
+
+Statistiques Ping pour 192.168.137.1:
+    Paquets : envoyés = 4, reçus = 4, perdus = 0 (perte 0%),
+Durée approximative des boucles en millisecondes :
+    Minimum = 1ms, Maximum = 2ms, Moyenne = 1ms
+```
+Côté server : 
+![Autorize](./pics/Autorizeping.png)
+
+Côté client : 
+![Autorize](./pics/AutorizeportN.png)
 # III. Manipulations d'autres outils/protocoles côté client
 
 ## 1. DHCP
@@ -271,12 +239,13 @@ Une fois que le serveur DHCP vous a donné une IP, vous enregistrer un fichier a
 
 🌞**Exploration du DHCP, depuis votre PC**
 
-- afficher l'adresse IP du serveur DHCP du réseau WiFi YNOV
-- cette adresse a une durée de vie limitée. C'est le principe du ***bail DHCP*** (ou *DHCP lease*). Trouver la date d'expiration de votre bail DHCP
-- vous pouvez vous renseigner un peu sur le fonctionnement de DHCP dans les grandes lignes. On aura un cours là dessus :)
-
-> Chez vous, c'est votre box qui fait serveur DHCP et qui vous donne une IP quand vous le demandez.
-
+```
+PS C:\Users\guill> ipconfig /all
+  Bail obtenu. . . . . . . . . . . . . . : mardi 4 octobre 2022 14:08:20
+  Bail expirant. . . . . . . . . . . . . : mercredi 5 octobre 2022 13:58:32
+  Passerelle par défaut. . . . . . . . . : 10.33.19.254
+  Serveur DHCP . . . . . . . . . . . . . : 10.33.19.254
+```
 ## 2. DNS
 
 Le protocole DNS permet la résolution de noms de domaine vers des adresses IP. Ce protocole permet d'aller sur `google.com` plutôt que de devoir connaître et utiliser l'adresse IP du serveur de Google.  
@@ -286,72 +255,61 @@ Un **serveur DNS** est un serveur à qui l'on peut poser des questions (= effect
 Si votre navigateur fonctionne "normalement" (il vous permet d'aller sur `google.com` par exemple) alors votre ordinateur connaît forcément l'adresse d'un serveur DNS. Et quand vous naviguez sur internet, il effectue toutes les requêtes DNS à votre place, de façon automatique.
 
 🌞** Trouver l'adresse IP du serveur DNS que connaît votre ordinateur**
+```
+PS C:\Users\guill> ipconfig /all
+   Serveurs DNS. . .  . . . . . . . . . . : 8.8.8.8
+```
 
 🌞 Utiliser, en ligne de commande l'outil `nslookup` (Windows, MacOS) ou `dig` (GNU/Linux, MacOS) pour faire des requêtes DNS à la main
+```
+PS C:\Users\guill> nslookup google.com
+Serveur :   dns.google
+Address:  8.8.8.8
 
-- faites un *lookup* (*lookup* = "dis moi à quelle IP se trouve tel nom de domaine")
-  - pour `google.com`
-  - pour `ynov.com`
-  - interpréter les résultats de ces commandes
-- déterminer l'adresse IP du serveur à qui vous venez d'effectuer ces requêtes
-- faites un *reverse lookup* (= "dis moi si tu connais un nom de domaine pour telle IP")
-  - pour l'adresse `78.73.21.21`
-  - pour l'adresse `22.146.54.58`
-  - interpréter les résultats
-  - *si vous vous demandez, j'ai pris des adresses random :)*
+Réponse ne faisant pas autorité :
+Nom :    google.com
+Addresses:  2a00:1450:4007:813::200e
+          142.250.179.78
+```
+```
+ PS C:\Users\guill> nslookup ynov.com
+Serveur :   dns.google
+Address:  8.8.8.8
 
+Réponse ne faisant pas autorité :
+Nom :    ynov.com
+Addresses:  2606:4700:20::ac43:4ae2
+          2606:4700:20::681a:ae9
+          2606:4700:20::681a:be9
+          104.26.10.233
+          104.26.11.233
+          172.67.74.226
+
+ ```
+```
+PS C:\Users\guill> nslookup 78.73.21.21
+Serveur :   dns.google
+Address:  8.8.8.8
+
+Nom :    78-73-21-21-no168.tbcn.telia.com
+Address:  78.73.21.21
+
+```
+```
+PS C:\Users\guill> nslookup 22.146.54.58
+Serveur :   dns.google
+Address:  8.8.8.8
+
+*** dns.google ne parvient pas à trouver 22.146.54.58 : Non-existent domain
+```
 # IV. Wireshark
-
-**Wireshark est un outil qui permet de visualiser toutes les trames qui sortent et entrent d'une carte réseau.**
-
-On appelle ça un **sniffer**, ou **analyseur de trames.**
-
-![Wireshark](./pics/wireshark.jpg)
-
-Il peut :
-
-- enregistrer le trafic réseau, pour l'analyser plus tard
-- afficher le trafic réseau en temps réel
-
-**On peut TOUT voir.**
-
-Un peu austère aux premiers abords, une manipulation très basique permet d'avoir une très bonne compréhension de ce qu'il se passe réellement.
-
-➜ **[Téléchargez l'outil Wireshark](https://www.wireshark.org/).**
 
 🌞 Utilisez le pour observer les trames qui circulent entre vos deux carte Ethernet. Mettez en évidence :
 
-- un `ping` entre vous et votre passerelle
-- un `netcat` entre vous et votre mate, branché en RJ45
-- une requête DNS. Identifiez dans la capture le serveur DNS à qui vous posez la question.
-- prenez moi des screens des trames en question
-- on va prendre l'habitude d'utiliser Wireshark souvent dans les cours, pour visualiser ce qu'il se passe
+![Espion](./pics/espion.png)
 
-# Bilan
+![Espion](./pics/espionnetcat.png)
 
-**Vu pendant le TP :**
+![Espion](./pics/espionnetcat2.png)
 
-- visualisation de vos interfaces réseau (en GUI et en CLI)
-- extraction des informations IP
-  - adresse IP et masque
-  - calcul autour de IP : adresse de réseau, etc.
-- connaissances autour de/aperçu de :
-  - un outil de diagnostic simple : `ping`
-  - un outil de scan réseau : `nmap`
-  - un outil qui permet d'établir des connexions "simples" (on y reviendra) : `netcat`
-  - un outil pour faire des requêtes DNS : `nslookup` ou `dig`
-  - un outil d'analyse de trafic : `wireshark`
-- manipulation simple de vos firewalls
-
-**Conclusion :**
-
-- Pour permettre à un ordinateur d'être connecté en réseau, il lui faut **une liaison physique** (par câble ou par *WiFi*).  
-- Pour réceptionner ce lien physique, l'ordinateur a besoin d'**une carte réseau**. La carte réseau porte une adresse MAC  
-- **Pour être membre d'un réseau particulier, une carte réseau peut porter une adresse IP.**
-Si deux ordinateurs reliés physiquement possèdent une adresse IP dans le même réseau, alors ils peuvent communiquer.  
-- **Un ordintateur qui possède plusieurs cartes réseau** peut réceptionner du trafic sur l'une d'entre elles, et le balancer sur l'autre, servant ainsi de "pivot". Cet ordinateur **est appelé routeur**.
-- Il existe dans la plupart des réseaux, certains équipements ayant un rôle particulier :
-  - un équipement appelé *passerelle*. C'est un routeur, et il nous permet de sortir du réseau actuel, pour en joindre un autre, comme Internet par exemple
-  - un équipement qui agit comme **serveur DNS** : il nous permet de connaître les IP derrière des noms de domaine
-  - un équipement qui agit comme **serveur DHCP** : il donne automatiquement des IP aux clients qui rejoigne le réseau
-  - **chez vous, c'est votre Box qui fait les trois :)**
+![DNS](./pics/DNS.png)
