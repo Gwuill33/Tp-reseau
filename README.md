@@ -31,9 +31,9 @@ Interface : 10.33.16.127 --- 0x4
 
 **🌞 Trouvez comment afficher les informations sur une carte IP (change selon l'OS)**
 
-![Ip](./pics/Ip.jpg)
+![Ip](./pics/Ip.png)
 
-![MAC](./pics/MAC.jpg)
+![MAC](./pics/MAC.png)
 
 
 ### A. Modification d'adresse IP (part 1)  
@@ -41,7 +41,7 @@ Interface : 10.33.16.127 --- 0x4
 🌞 Utilisez l'interface graphique de votre OS pour **changer d'adresse IP** :
 J'ai changé mon adresse ip par le panneau de configuration
 
-![ChangementIp](./pics/ChangementIp.jpg)
+![ChangementIp](./pics/ChangementIp.png)
 
 ```
 PS C:\Users\guill> ipconfig /all
@@ -60,7 +60,7 @@ En changeant d'ip on peut tomber sur une ip déjà utilisé et par conséquent l
 
 🌞 **Modifiez l'IP des deux machines pour qu'elles soient dans le même réseau**
 
-![Cable](./pics/Cable.jpg)
+![Cable](./pics/Cable.png)
 
 🌞 **Vérifier à l'aide d'une commande que votre IP a bien été changée**
 ```
