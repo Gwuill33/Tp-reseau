@@ -31,7 +31,7 @@ Interface : 10.33.16.127 --- 0x4
 
 **🌞 Trouvez comment afficher les informations sur une carte IP (change selon l'OS)**
 
-![Ip](./pics/Ip.png)
+![Ip](./pics/ip.png)
 
 ![MAC](./pics/MAC.png)
 
