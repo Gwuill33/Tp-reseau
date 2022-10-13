@@ -72,8 +72,13 @@ Vous aurez besoin de 3 VMs pour cette partie. **Réutilisez les deux VMs précé
 
 🌞**Activer le routage sur le noeud `router`**
 
-> Cette étape est nécessaire car Rocky Linux c'est pas un OS dédié au routage par défaut. Ce n'est bien évidemment une opération qui n'est pas nécessaire sur un équipement routeur dédié comme du matériel Cisco.
-
+```
+[root@localhost ~]# firewall-cmd --get-active-zone
+public
+  interfaces: enp0s8
+[root@localhost ~]# firewall-cmd --add-masquerade --zone=public --permanent
+success
+```
 🌞**Ajouter les routes statiques nécessaires pour que `john` et `marcel` puissent se `ping`**
 
 john : 
@@ -119,9 +124,6 @@ routeur
 10.3.1.11 dev enp0s8 lladdr 08:00:27:7a:2d:04 STALE
 ```
 
-- répétez l'opération précédente (vider les tables, puis `ping`), en lançant `tcpdump` sur `marcel`
-- **écrivez, dans l'ordre, les échanges ARP qui ont eu lieu, puis le ping et le pong, je veux TOUTES les trames** utiles pour l'échange
-
 Par exemple (copiez-collez ce tableau ce sera le plus simple) :
 
 | ordre | type trame  | IP source | MAC source              | IP destination | MAC destination            |
@@ -135,7 +137,7 @@ Par exemple (copiez-collez ce tableau ce sera le plus simple) :
 | 7     | Pong        | 10.3.2.12      |`marcel` `08:00:27:dd:38d9b`| 10.3.2.254           |   `routeur` `08:00:27:c4:92:cf` |
 | 8     | Pong        | 10.3.2.12      |`marcel` `08:00:27:dd:38d9b`| 10.3.1.11       | `john` `08:00:27:7a:2d:04`  |
 
-**[Capture ARP-PING Marcel](./tp3_capteure_marcel.pcapng)**
+**[Capture ARP-PING Marcel](./tp3_capture_marcel.pcapng)**
 **[Capture ARP-PING Routeur](./tp3_capture_routeur.pcapng)**
 
 ### 3. Accès internet
@@ -156,13 +158,29 @@ PING google.com (216.58.198.206) 56(84) bytes of data.
 64 bytes from par10s27-in-f206.1e100.net (216.58.198.206): icmp_seq=1 ttl=113 time=23.6 ms
 64 bytes from par10s27-in-f14.1e100.net (216.58.198.206): icmp_seq=2 ttl=113 time=22.1 ms
 ```
+DIG : 
+```
+; <<>> DiG 9.16.23-RH <<>> gitlab.com
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 45231
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
 
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 1232
+;; QUESTION SECTION:
+;gitlab.com.                    IN      A
+
+;; ANSWER SECTION:
+gitlab.com.             14      IN      A       172.65.251.78
+
+;; Query time: 23 msec
+;; SERVER: 1.1.1.1#53(1.1.1.1)
+;; WHEN: Thu Oct 13 14:22:17 CEST 2022
+;; MSG SIZE  rcvd: 55
+```
 
 🌞**Analyse de trames**
-
-- effectuez un `ping 8.8.8.8` depuis `john`
-- capturez le ping depuis `john` avec `tcpdump`
-- analysez un ping aller et le retour qui correspond et mettez dans un tableau :
 
 | ordre | type trame | IP source          | MAC source              | IP destination | MAC destination |
 |-------|------------|--------------------|-------------------------|----------------|-----------------|
@@ -173,60 +191,110 @@ PING google.com (216.58.198.206) 56(84) bytes of data.
 
 ## III. DHCP
 
-On reprend la config précédente, et on ajoutera à la fin de cette partie une 4ème machine pour effectuer des tests.
-
-| Machine  | `10.3.1.0/24`              | `10.3.2.0/24` |
-|----------|----------------------------|---------------|
-| `router` | `10.3.1.254`               | `10.3.2.254`  |
-| `john`   | `10.3.1.11`                | no            |
-| `bob`    | oui mais pas d'IP statique | no            |
-| `marcel` | no                         | `10.3.2.12`   |
-
-```schema
-   john               router              marcel
-  ┌─────┐             ┌─────┐             ┌─────┐
-  │     │    ┌───┐    │     │    ┌───┐    │     │
-  │     ├────┤ho1├────┤     ├────┤ho2├────┤     │
-  └─────┘    └─┬─┘    └─────┘    └───┘    └─────┘
-   john        │
-  ┌─────┐      │
-  │     │      │
-  │     ├──────┘
-  └─────┘
-```
-
-### 1. Mise en place du serveur DHCP
-
 🌞**Sur la machine `john`, vous installerez et configurerez un serveur DHCP** (go Google "rocky linux dhcp server").
+Install dhclient on John with :
 
-- installation du serveur sur `john`
-- créer une machine `bob`
-- faites lui récupérer une IP en DHCP à l'aide de votre serveur
+sudo dnf install dhcp-server -y
 
-> Il est possible d'utilise la commande `dhclient` pour forcer à la main, depuis la ligne de commande, la demande d'une IP en DHCP, ou renouveler complètement l'échange DHCP (voir `dhclient -h` puis call me et/ou Google si besoin d'aide).
+Next, open the DHCP server configuration file with the command:
+
+sudo nano /etc/dhcp/dhcpd.conf
+
+Add this in file
+
+```default-lease-time 900;
+max-lease-time 10800;
+
+authoritative;
+
+subnet 10.3.1.0 netmask 255.255.255.0 {
+range 10.3.1.2 10.3.1.253;
+option routers 10.3.1.254;
+option subnet-mask 255.255.255.0;
+option domain-name-servers 1.1.1.1;
+}
+```
+Configur firewall
+
+sudo firewall-cmd --add-port=67/udp --permanent
+
+Now, reload the firewall to apply the new rule with:
+
+sudo firewall-cmd --reload
+
+Start DHCP server
+
+sudo systemctl enable --now
 
 🌞**Améliorer la configuration du DHCP**
 
-- ajoutez de la configuration à votre DHCP pour qu'il donne aux clients, en plus de leur IP :
-  - une route par défaut
-  - un serveur DNS à utiliser
-- récupérez de nouveau une IP en DHCP sur `bob` pour tester :
-  - `marcel` doit avoir une IP
-    - vérifier avec une commande qu'il a récupéré son IP
-    - vérifier qu'il peut `ping` sa passerelle
-  - il doit avoir une route par défaut
-    - vérifier la présence de la route avec une commande
-    - vérifier que la route fonctionne avec un `ping` vers une IP
-  - il doit connaître l'adresse d'un serveur DNS pour avoir de la résolution de noms
-    - vérifier avec la commande `dig` que ça fonctionne
-    - vérifier un `ping` vers un nom de domaine
 
+```[root@localhost ~]# ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 08:00:27:78:be:3e brd ff:ff:ff:ff:ff:ff
+    inet 10.3.1.2/24 brd 10.3.1.255 scope global dynamic noprefixroute enp0s8
+       valid_lft 765sec preferred_lft 765sec
+```
+```
+[root@localhost ~]# ping 10.3.1.254
+PING 10.3.1.254 (10.3.1.254) 56(84) bytes of data.
+64 bytes from 10.3.1.254: icmp_seq=1 ttl=64 time=0.818 ms
+64 bytes from 10.3.1.254: icmp_seq=2 ttl=64 time=0.667 ms
+64 bytes from 10.3.1.254: icmp_seq=3 ttl=64 time=0.514 ms
+64 bytes from 10.3.1.254: icmp_seq=4 ttl=64 time=0.631 ms
+```
+```
+[root@localhost ~]# ip r s
+default via 10.3.1.254 dev enp0s8 proto dhcp src 10.3.1.2 metric 100
+```
+
+```
+[root@localhost ~]# ping 10.3.2.12
+PING 10.3.2.12 (10.3.2.12) 56(84) bytes of data.
+64 bytes from 10.3.2.12: icmp_seq=1 ttl=63 time=1.12 ms
+64 bytes from 10.3.2.12: icmp_seq=2 ttl=63 time=0.889 ms
+64 bytes from 10.3.2.12: icmp_seq=3 ttl=63 time=0.833 ms
+64 bytes from 10.3.2.12: icmp_seq=4 ttl=63 time=1.09 ms
+```
+
+```
+[root@localhost ~]# dig gitlab.com
+
+; <<>> DiG 9.16.23-RH <<>> gitlab.com
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 33526
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 1232
+;; QUESTION SECTION:
+;gitlab.com.                    IN      A
+
+;; ANSWER SECTION:
+gitlab.com.             144     IN      A       172.65.251.78
+
+;; Query time: 35 msec
+;; SERVER: 1.1.1.1#53(1.1.1.1)
+;; WHEN: Thu Oct 13 15:47:40 CEST 2022
+;; MSG SIZE  rcvd: 55
+```
+```
+[root@localhost ~]# ping gitlab.com
+PING gitlab.com (172.65.251.78) 56(84) bytes of data.
+64 bytes from 172.65.251.78 (172.65.251.78): icmp_seq=1 ttl=53 time=26.3 ms
+64 bytes from 172.65.251.78 (172.65.251.78): icmp_seq=2 ttl=53 time=33.6 ms
+64 bytes from 172.65.251.78 (172.65.251.78): icmp_seq=3 ttl=53 time=23.8 ms
+64 bytes from 172.65.251.78 (172.65.251.78): icmp_seq=4 ttl=53 time=38.3 ms
+```
 ### 2. Analyse de trames
 
 🌞**Analyse de trames**
 
-- lancer une capture à l'aide de `tcpdump` afin de capturer un échange DHCP
-- demander une nouvelle IP afin de générer un échange DHCP
-- exportez le fichier `.pcapng`
-
-🦈 **Capture réseau `tp2_dhcp.pcapng`**
+**[Capture DHCP](./tp3_capture_dhcp.pcapng)**
