@@ -271,70 +271,91 @@ google.com resolved to 216.58.214.78
 
 # V. Add a building
 
-On a acheté un nouveau bâtiment, faut tirer et configurer un nouveau switch jusque là-bas.
+🌞  **Vous devez me rendre le show running-config de tous les équipements**
 
-On va en profiter pour setup un serveur DHCP pour les clients qui s'y trouvent.
+**Pour le sw1 :**
 
-## 1. Topologie 5
+```
+interface Ethernet0/0
+ switchport access vlan 10
+ switchport trunk allowed vlan 10,20,30
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface Ethernet0/1
+ switchport access vlan 10
+ switchport mode access
+!
 
-![Topo 5](./pics/topo5.png)
+[...]
 
-## 2. Adressage topologie 5
+interface Ethernet3/3
+ switchport trunk allowed vlan 10,20,30
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+```
 
-Les réseaux et leurs VLANs associés :
+**Pour le sw2 :**
 
-| Réseau    | Adresse        | VLAN associé |
-|-----------|----------------|--------------|
-| `clients` | `10.5.10.0/24` | 10           |
-| `admins`  | `10.5.20.0/24` | 20           |
-| `servers` | `10.5.30.0/24` | 30           |
+```
+interface Ethernet0/0
+ switchport access vlan 10
+ switchport mode access
+!
+interface Ethernet0/1
+ switchport access vlan 10
+ switchport mode access
+!
+interface Ethernet0/2
+ switchport access vlan 20
+ switchport mode access
+!
+interface Ethernet0/3
+ switchport access vlan 30
+ switchport mode access
 
-L'adresse des machines au sein de ces réseaux :
+[...]
 
-| Node                | `clients`        | `admins`         | `servers`        |
-|---------------------|------------------|------------------|------------------|
-| `pc1.clients.tp5`   | `10.5.10.1/24`   | x                | x                |
-| `pc2.clients.tp5`   | `10.5.10.2/24`   | x                | x                |
-| `pc3.clients.tp5`   | DHCP             | x                | x                |
-| `pc4.clients.tp5`   | DHCP             | x                | x                |
-| `pc5.clients.tp5`   | DHCP             | x                | x                |
-| `dhcp1.clients.tp5` | `10.5.10.253/24` | x                | x                |
-| `adm1.admins.tp5`   | x                | `10.5.20.1/24`   | x                |
-| `web1.servers.tp5`  | x                | x                | `10.5.30.1/24`   |
-| `r1`                | `10.5.10.254/24` | `10.5.20.254/24` | `10.5.30.254/24` |
+interface Ethernet3/3
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+```
 
-## 3. Setup topologie 5
+**pour le sw3 :**
 
-Vous pouvez partir de la topologie 4. 
+```
+interface Ethernet0/3
+ switchport access vlan 10
+ switchport mode access
 
-🌞  **Vous devez me rendre le `show running-config` de tous les équipements**
 
-- de tous les équipements réseau
-  - le routeur
-  - les 3 switches
+**Pour le R1 :**
 
-> N'oubliez pas les VLANs sur tous les switches.
 
-🖥️ **VM `dhcp1.client1.tp5`**, déroulez la [Checklist VM Linux](#checklist-vm-linux) dessus
-
-🌞  **Mettre en place un serveur DHCP dans le nouveau bâtiment**
-
-- il doit distribuer des IPs aux clients dans le réseau `clients` qui sont branchés au même switch que lui
-- sans aucune action manuelle, les clients doivent...
-  - avoir une IP dans le réseau `clients`
-  - avoir un accès au réseau `servers`
-  - avoir un accès WAN
-  - avoir de la résolution DNS
-
-> Réutiliser les serveurs DHCP qu'on a monté dans les autres TPs.
-
-🌞  **Vérification**
-
-- un client récupère une IP en DHCP
-- il peut ping le serveur Web
-- il peut ping `8.8.8.8`
-- il peut ping `google.com`
-
-> Faites ça sur n'importe quel VPCS que vous venez d'ajouter : `pc3` ou `pc4` ou `pc5`.
-
-![i know cisco](./pics/i_know.jpeg)
+interface FastEthernet0/0
+ no ip address
+ ip nat inside
+ ip virtual-reassembly
+ duplex auto
+ speed auto
+!
+interface FastEthernet0/0.10
+ encapsulation dot1Q 10
+ ip address 10.5.10.254 255.255.255.0
+!
+interface FastEthernet0/0.20
+ encapsulation dot1Q 20
+ ip address 10.5.20.254 255.255.255.0
+!
+interface FastEthernet0/0.30
+ encapsulation dot1Q 30
+ ip address 10.5.30.254 255.255.255.0
+!
+interface FastEthernet0/1
+ ip address dhcp
+ ip nat outside
+ ip virtual-reassembly
+ duplex auto
+ speed auto
+!
+```
