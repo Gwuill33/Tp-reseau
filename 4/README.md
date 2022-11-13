@@ -238,7 +238,7 @@ LISTEN    0    10    10.4.1.201:53     0.0.0.0:*
 
 🌞 **Ouvrez le bon port dans le firewall**
 ```
-[gwuill@localhost ~]$ sudo firewall-cmd --add-port=53/tcp --permanent
+[gwuill@localhost ~]$ sudo firewall-cmd --add-port=53/udp --permanent
 success
 [gwuill@localhost ~]$ sudo firewall-cmd --reload
 success
@@ -249,7 +249,7 @@ public (active)
   interfaces: enp0s8
   sources:
   services: cockpit dhcpv6-client ssh
-  ports: 53/tcp
+  ports: 53/udp
   protocols:
   forward: yes
   masquerade: no
@@ -262,7 +262,7 @@ public (active)
 
 🌞 **Sur la machine `node1.tp4.b1`**
 
-```bash
+```
 [gwuill@localhost ~]$ dig node1.tp4.b1 @10.4.1.201
 
 ; <<>> DiG 9.16.23-RH <<>> node1.tp4.b1 @10.4.1.201
@@ -284,6 +284,8 @@ node1.tp4.b1.           86400   IN      A       10.4.1.11
 ;; SERVER: 10.4.1.201#53(10.4.1.201)
 ;; WHEN: Wed Oct 26 22:40:59 CEST 2022
 ;; MSG SIZE  rcvd: 85
+```
+```
 
 [gwuill@localhost ~]$ dig dns-server.tp4.b1 @10.4.1.201
 
@@ -306,7 +308,8 @@ dns-server.tp4.b1.      86400   IN      A       10.4.1.201
 ;; SERVER: 10.4.1.201#53(10.4.1.201)
 ;; WHEN: Wed Oct 26 22:41:24 CEST 2022
 ;; MSG SIZE  rcvd: 90
-
+```
+```
 [gwuill@localhost ~]$ dig www.google.com @10.4.1.201
 
 ; <<>> DiG 9.16.23-RH <<>> www.google.com @10.4.1.201
@@ -328,8 +331,24 @@ dns-server.tp4.b1.      86400   IN      A       10.4.1.201
 ```
 🌞 **Sur votre PC**
 
-- utilisez une commande pour résoudre le nom `node1.tp4.b1` en utilisant `10.4.1.201` comme serveur DNS
+```bash
+PS C:\Users\guill> nslookup
+Serveur par dÚfaut :   dns.google
+Address:  8.8.8.8
 
-> Le fait que votre serveur DNS puisse résoudre un nom comme `www.google.com`, ça s'appelle la récursivité et c'est activé avec la ligne `recursion yes;` dans le fichier de conf.
+> set type=soa
+> node1.tp4.b1 10.4.1.201
+Serveur :   [10.4.1.201]
+Address:  10.4.1.201
 
-🦈 **Capture d'une requête DNS vers le nom `node1.tp4.b1` ainsi que la réponse**
+tp4.b1
+        primary name server = dns-server.tp4.b1
+        responsible mail addr = admin.tp4.b1
+        serial  = 2019061800
+        refresh = 3600 (1 hour)
+        retry   = 1800 (30 mins)
+        expire  = 604800 (7 days)
+        default TTL = 86400 (1 day)
+```
+
+**[Capture Request DNS](./request_dns.pcapng)**
